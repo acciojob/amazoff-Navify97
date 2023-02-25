@@ -1,6 +1,7 @@
 package com.driver;
 
 import java.util.List;
+import java.util.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -18,54 +19,77 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("orders")
 public class OrderController {
-
+    private Map<String, Order> orders = new HashMap<>();
+    private Map<String, DeliveryPartner> deliveryPartners = new HashMap<>();
+    private Map<String, List<String>> assignedOrdersByPartner = new HashMap<>();
 
     @PostMapping("/add-order")
     public ResponseEntity<String> addOrder(@RequestBody Order order){
-
+        orders.put(order a.getOrderId(), order);
         return new ResponseEntity<>("New order added successfully", HttpStatus.CREATED);
     }
 
     @PostMapping("/add-partner/{partnerId}")
     public ResponseEntity<String> addPartner(@PathVariable String partnerId){
-
+        DeliveryPartner partner = new DeliveryPartner(partnerId);
+        deliveryPartners.put(partnerId, partner);
         return new ResponseEntity<>("New delivery partner added successfully", HttpStatus.CREATED);
     }
 
     @PutMapping("/add-order-partner-pair")
     public ResponseEntity<String> addOrderPartnerPair(@RequestParam String orderId, @RequestParam String partnerId){
-
-        //This is basically assigning that order to that partnerId
-        return new ResponseEntity<>("New order-partner pair added successfully", HttpStatus.CREATED);
+        Order order = orders.get(orderId);
+        DeliveryPartner partner = deliveryPartners.get(partnerId);
+        if(order != null && partner != null) {
+            order.setDeliveryPartnerId(partnerId);
+            List<String> assignedOrders = assignedOrdersByPartner.getOrDefault(partnerId, new ArrayList<>());
+            assignedOrders.add(orderId);
+            assignedOrdersByPartner.put(partnerId, assignedOrders);
+            //This is basically assigning that order to that partnerId
+            return new ResponseEntity<>("New order-partner pair added successfully", HttpStatus.CREATED);
+        }
+        else {
+            return new ResponseEntity<>("Order or delivery partner not found", HttpStatus.NOT_FOUND);
+        }
     }
 
     @GetMapping("/get-order-by-id/{orderId}")
     public ResponseEntity<Order> getOrderById(@PathVariable String orderId){
+        Order order = orders.get(orderId);
 
-        Order order= null;
+        Order order= orders.get(orderId);
         //order should be returned with an orderId.
-
-        return new ResponseEntity<>(order, HttpStatus.CREATED);
+        if(order != null) {
+            return new ResponseEntity<>(order, HttpStatus.CREATED);
+        }
+        else {
+            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+        }
     }
 
     @GetMapping("/get-partner-by-id/{partnerId}")
     public ResponseEntity<DeliveryPartner> getPartnerById(@PathVariable String partnerId){
 
-        DeliveryPartner deliveryPartner = null;
+        DeliveryPartner deliveryPartner = deliveryPartners.get(partnerId);
 
         //deliveryPartner should contain the value given by partnerId
-
-        return new ResponseEntity<>(deliveryPartner, HttpStatus.CREATED);
+        if(deliveryPartner != null){
+            return new ResponseEntity<>(deliveryPartner, HttpStatus.CREATED);
+        } else {
+            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+        }
     }
 
     @GetMapping("/get-order-count-by-partner-id/{partnerId}")
     public ResponseEntity<Integer> getOrderCountByPartnerId(@PathVariable String partnerId){
 
-        Integer orderCount = 0;
+      //  Integer orderCount = 0;
 
         //orderCount should denote the orders given by a partner-id
 
-        return new ResponseEntity<>(orderCount, HttpStatus.CREATED);
+     //   return new ResponseEntity<>(orderCount, HttpStatus.CREATED);
+        List<String> assignedOrders = assignedOrdersByPartner.getOrDefault(partnerId, new ArrayList<>());
+        return new ResponseEntity<>(assignedOrders.size(), HttpStatus.OK);
     }
 
     @GetMapping("/get-orders-by-partner-id/{partnerId}")
