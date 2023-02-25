@@ -13,8 +13,4 @@ public class Application {
 		SpringApplication.run(Application.class, args);
 
 	}
-	@Bean
-	public OrderController orderController() {
-		return new OrderController();
-	}
 }
